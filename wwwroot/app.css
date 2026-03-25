@@ -1,0 +1,888 @@
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #fff;
+    color: #212529;
+}
+
+a, .btn-link {
+    color: #006bb7;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+.content {
+    padding-top: 1.1rem;
+}
+
+h1:focus {
+    outline: none;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #e50000;
+}
+
+.validation-message {
+    color: #e50000;
+}
+
+.blazor-error-boundary {
+    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."
+    }
+
+.darker-border-checkbox.form-check-input {
+    border-color: #929292;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+/* ============================================
+   CONTRAST: all text meets 4.5:1 minimum
+   Key decisions:
+   - #495057 on #fff = 7.1:1 (replaces #6c757d = 4.6:1 borderline)
+   - #5a6268 on #fff = 5.7:1 (secondary labels)
+   - #856404 on #fff3cd = 4.8:1 (warning text on warning bg)
+   - #155724 on #e8f5e9 = 7.2:1 (success)
+   - #0c5460 on #d1ecf1 = 5.3:1 (info/context panel)
+   ============================================ */
+
+/* Phase stepper */
+.phase-stepper {
+    display: flex;
+}
+
+.phase-step {
+    flex: 1;
+    border-radius: 0;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    color: #495057;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.15s;
+    position: relative;
+}
+
+.phase-step:first-child {
+    border-radius: 0.375rem 0 0 0.375rem;
+}
+
+.phase-step:last-child {
+    border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.phase-step .phase-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: #dee2e6;
+    color: #495057;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.phase-step .phase-count {
+    font-size: 0.7rem;
+    background: #dee2e6;
+    color: #212529;
+    padding: 0.05rem 0.4rem;
+    border-radius: 1rem;
+    margin-left: auto;
+}
+
+.phase-step .phase-gaps {
+    font-size: 0.65rem;
+    background: #856404;
+    color: #fff;
+    padding: 0.05rem 0.35rem;
+    border-radius: 1rem;
+    font-weight: 600;
+}
+
+.phase-step.active {
+    background: #0d6efd;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+.phase-step.active .phase-number {
+    background: rgba(255,255,255,0.3);
+    color: #fff;
+}
+
+.phase-step.active .phase-count {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+}
+
+.phase-step.has-content {
+    background: #e8f5e9;
+    color: #155724;
+    border-color: #c8e6c9;
+}
+
+.phase-step.has-content .phase-number {
+    background: #155724;
+    color: #fff;
+}
+
+.phase-step.has-content .phase-count {
+    background: #155724;
+    color: #fff;
+}
+
+.phase-step.empty-warning {
+    border-color: #856404;
+}
+
+.phase-step:hover:not(.active) {
+    background: #e9ecef;
+}
+
+/* Guide prompts — 5a6268 on f8f9fa = 5.1:1 */
+.guide-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.guide-prompt {
+    color: #5a6268;
+    font-style: italic;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+    background: #f8f9fa;
+    border-radius: 1rem;
+    border: 1px solid #dee2e6;
+}
+
+/* Phase items */
+.phase-item {
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.phase-item:hover {
+    border-color: #ced4da;
+}
+
+.phase-item.unlinked-item {
+    border-left: 3px solid #856404;
+}
+
+.link-section {
+    padding: 0.25rem 0;
+}
+
+.link-section .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+}
+
+/* Link labels — #495057 on #fff = 7.1:1 */
+.link-label {
+    color: #495057;
+}
+
+/* Link warnings — #7a5a00 on #fff = 5.5:1 */
+.link-warning {
+    color: #7a5a00;
+}
+
+/* Gap flags — #8b1a1a on #fef3cd = 6.2:1 */
+.gap-flag {
+    font-size: 0.7rem;
+    color: #8b1a1a;
+    background: #fef3cd;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.25rem;
+    margin-left: 0.35rem;
+    font-weight: 500;
+}
+
+/* Gap items — #6e5200 on white context panel */
+.gap-item {
+    color: #6e5200;
+}
+
+/* Hierarchy hint — #495057 on #fff = 7.1:1 */
+.hierarchy-hint {
+    font-size: 0.75rem;
+    color: #495057;
+    font-style: italic;
+}
+
+/* Footer status */
+.phase-footer-status {
+    font-size: 0.85rem;
+}
+
+/* #7a5a00 on white = 5.5:1 */
+.footer-warning {
+    color: #7a5a00;
+}
+
+/* #155724 on white = 7.8:1 */
+.footer-success {
+    color: #155724;
+}
+
+/* Step group header label — #495057 on #f8f9fa = 6.4:1 */
+.step-group-label {
+    color: #495057;
+}
+
+/* Context panel outcome label — #495057 on #f0f9ff = 6.7:1 */
+.ctx-outcome-label {
+    color: #495057;
+    font-style: italic;
+}
+
+/* Orphan section */
+.orphan-heading {
+    color: #7a5a00;
+}
+
+.orphan-subtext {
+    color: #495057;
+}
+
+/* Context panel — #0c5460 on #f0f9ff = 6.8:1 */
+.context-panel {
+    border: 1px solid #b8daff;
+    border-radius: 0.375rem;
+    background: #f0f9ff;
+    overflow: hidden;
+}
+
+.context-panel-header {
+    padding: 0.4rem 0.75rem;
+    background: #d6eaf8;
+    color: #0c5460;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    font-size: 0.85rem;
+    user-select: none;
+}
+
+.context-panel-header small {
+    color: #0c5460;
+}
+
+.context-panel-header:hover {
+    background: #c5dff0;
+}
+
+.context-panel-body {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: #212529;
+}
+
+/* #495057 on #fff = 7.1:1 */
+.context-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #495057;
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.15rem;
+}
+
+.context-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: #212529;
+}
+
+.context-list li {
+    padding: 0.1rem 0;
+}
+
+.context-step-group {
+    margin-bottom: 0.35rem;
+}
+
+/* Step groups */
+.step-group {
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    background: #fff;
+    overflow: hidden;
+}
+
+.step-group:hover {
+    border-color: #ced4da;
+}
+
+.step-group-header {
+    padding: 0.4rem 0.75rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.step-group-header .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.5rem;
+}
+
+.step-row {
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.step-row:last-of-type {
+    border-bottom: none;
+}
+
+.insert-step-btn {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.75rem;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+}
+
+.step-group:hover .insert-step-btn,
+.insert-step-btn:hover {
+    opacity: 1;
+}
+
+/* Summary chain view */
+.summary-chain {
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.summary-outcome,
+.summary-step,
+.summary-hazard,
+.summary-mitigation {
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    color: #212529;
+}
+
+/* #155724 on #e8f5e9 = 7.2:1 */
+.summary-outcome {
+    background: #e8f5e9;
+    font-weight: 500;
+    color: #155724;
+}
+
+.summary-step {
+    padding-left: 1.5rem;
+    background: #fff;
+}
+
+/* #4a3800 on #fff8e1 = 7.6:1 */
+.summary-hazard {
+    padding-left: 2.5rem;
+    background: #fff8e1;
+    color: #4a3800;
+}
+
+/* #063b6e on #e3f2fd = 7.5:1 */
+.summary-mitigation {
+    padding-left: 3.5rem;
+    background: #e3f2fd;
+    color: #063b6e;
+}
+
+/* #495057 = 7.1:1 on white or light bgs */
+.summary-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #495057;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.summary-status {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.summary-status-good {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.summary-status-warn {
+    background: #fef3cd;
+    color: #6e5200;
+    border: 1px solid #ffc107;
+}
+
+.summary-orphans {
+    padding: 0.75rem;
+    border: 1px dashed #856404;
+    border-radius: 0.375rem;
+    background: #fef9e7;
+    color: #212529;
+}
+
+/* Empty phase prompt */
+.empty-phase-prompt .btn {
+    font-size: 1rem;
+    padding: 0.75rem 2rem;
+}
+
+
+/* ============================================
+   PRESENTATION MODE
+   Same interactive editor, scaled up for room
+   visibility. Larger fonts, inputs, buttons,
+   and more spacing so people in the back can read.
+   ============================================ */
+
+/* Normal mode: constrain width. Presentation mode: use full viewport. */
+.container-fluid:not(.presentation-mode) {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.presentation-mode {
+    font-size: 1.4rem;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+.presentation-mode h2 {
+    font-size: 2.5rem;
+}
+
+.presentation-mode .card-header h5 {
+    font-size: 1.8rem;
+}
+
+.presentation-mode .card-header small {
+    font-size: 1.15rem;
+}
+
+/* Larger inputs and selects */
+.presentation-mode .form-control,
+.presentation-mode .form-control-sm {
+    font-size: 1.35rem;
+    padding: 0.7rem 1rem;
+    min-height: 3rem;
+}
+
+.presentation-mode .form-select,
+.presentation-mode .form-select-sm {
+    font-size: 1.25rem;
+    padding: 0.6rem 1rem;
+    min-height: 2.8rem;
+}
+
+.presentation-mode .input-group-text {
+    font-size: 1.15rem;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Larger buttons */
+.presentation-mode .btn {
+    font-size: 1.25rem;
+    padding: 0.6rem 1.25rem;
+}
+
+.presentation-mode .btn-sm {
+    font-size: 1.15rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Phase stepper */
+.presentation-mode .phase-step {
+    padding: 1rem 1.5rem;
+    font-size: 1.25rem;
+}
+
+.presentation-mode .phase-step .phase-number {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.1rem;
+}
+
+.presentation-mode .phase-step .phase-count,
+.presentation-mode .phase-step .phase-gaps {
+    font-size: 0.95rem;
+    padding: 0.15rem 0.6rem;
+}
+
+/* Guide prompts */
+.presentation-mode .guide-prompt {
+    font-size: 1.1rem;
+    padding: 0.35rem 0.85rem;
+}
+
+/* Phase items more spacious */
+.presentation-mode .phase-item {
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Step rows */
+.presentation-mode .step-row {
+    padding: 0.75rem 1.25rem;
+}
+
+.presentation-mode .step-group-header {
+    padding: 0.75rem 1.25rem;
+    font-size: 1.2rem;
+}
+
+/* Badges */
+.presentation-mode .badge {
+    font-size: 1rem;
+    padding: 0.35rem 0.7rem;
+}
+
+/* Link section buttons */
+.presentation-mode .link-section .btn-sm {
+    font-size: 1.05rem;
+    padding: 0.35rem 0.7rem;
+}
+
+.presentation-mode .link-label,
+.presentation-mode .link-warning {
+    font-size: 1.1rem;
+}
+
+/* Context panel */
+.presentation-mode .context-panel-header {
+    font-size: 1.15rem;
+    padding: 0.6rem 1.25rem;
+}
+
+.presentation-mode .context-panel-body {
+    font-size: 1.15rem;
+    padding: 1rem 1.25rem;
+}
+
+.presentation-mode .context-section-title {
+    font-size: 1.1rem;
+}
+
+/* Gap flags */
+.presentation-mode .gap-flag {
+    font-size: 0.95rem;
+    padding: 0.2rem 0.6rem;
+}
+
+/* Insert step button */
+.presentation-mode .insert-step-btn {
+    font-size: 1.05rem;
+    padding: 0.35rem 1.25rem;
+}
+
+/* Footer */
+.presentation-mode .card-footer {
+    padding: 1rem 1.25rem;
+}
+
+.presentation-mode .phase-footer-status {
+    font-size: 1.15rem;
+}
+
+/* Hierarchy hint */
+.presentation-mode .hierarchy-hint {
+    font-size: 1.05rem;
+}
+
+/* Summary */
+.presentation-mode .summary-outcome,
+.presentation-mode .summary-step,
+.presentation-mode .summary-hazard,
+.presentation-mode .summary-mitigation {
+    padding: 0.75rem 1.25rem;
+    font-size: 1.25rem;
+}
+
+.presentation-mode .summary-label {
+    font-size: 0.95rem;
+}
+
+/* Labels */
+.presentation-mode .form-label {
+    font-size: 1.15rem;
+}
+
+/* Card body */
+.presentation-mode .card-body {
+    padding: 1.5rem;
+}
+
+.presentation-mode .card-header {
+    padding: 1rem 1.5rem;
+}
+
+/* Presentation: hazard cards */
+.presentation-mode .hazard-card {
+    padding: 1rem 1.25rem;
+}
+
+.presentation-mode .hazard-row-main {
+    gap: 0.75rem;
+}
+
+.presentation-mode .hazard-row-steps {
+    padding-top: 0.6rem;
+    gap: 0.5rem;
+}
+
+.presentation-mode .step-link-btn {
+    font-size: 1rem;
+    padding: 0.3rem 0.75rem;
+}
+
+.presentation-mode .hazard-select {
+    max-width: 12rem;
+}
+
+.presentation-mode .mitigation-type-select {
+    max-width: 12rem;
+}
+
+/* ============================================
+   END OF PRESENTATION MODE
+   (no dark theme — always light)
+   ============================================ */
+
+/* ============================================
+   COMPACT HAZARD / MITIGATION CARDS
+   Single-row layout for density.
+   ============================================ */
+
+/* Controls hierarchy reference bar */
+.controls-reference {
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.controls-reference-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.35rem;
+}
+
+.controls-reference-grid {
+    display: flex;
+    gap: 0;
+}
+
+.controls-ref-item {
+    flex: 1;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    border-right: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+}
+
+.controls-ref-item:last-child {
+    border-right: none;
+}
+
+.controls-ref-item strong {
+    font-size: 0.8rem;
+    color: #212529;
+}
+
+.controls-ref-item span {
+    color: #495057;
+}
+
+.controls-ref-best {
+    background: #d4edda;
+    border-left: 3px solid #155724;
+}
+
+.controls-ref-better {
+    background: #e2f0d9;
+    border-left: 3px solid #3c763d;
+}
+
+.controls-ref-good {
+    background: #fff8e1;
+    border-left: 3px solid #856404;
+}
+
+.controls-ref-fair {
+    background: #fff3cd;
+    border-left: 3px solid #997a00;
+}
+
+.controls-ref-last {
+    background: #fde8e8;
+    border-left: 3px solid #8b1a1a;
+}
+
+/* Presentation mode: controls reference */
+.presentation-mode .controls-reference {
+    padding: 0.75rem 1.5rem;
+}
+
+.presentation-mode .controls-reference-title {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.presentation-mode .controls-ref-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+}
+
+.presentation-mode .controls-ref-item strong {
+    font-size: 1.05rem;
+}
+
+.hazard-card {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background: #fff;
+}
+
+.hazard-card:hover {
+    border-color: #ced4da;
+}
+
+.hazard-card.unlinked-item {
+    border-left: 3px solid #856404;
+}
+
+.hazard-row-main {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hazard-risk-controls {
+    display: flex;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.hazard-select {
+    max-width: 9.5rem;
+    flex-shrink: 0;
+}
+
+.mitigation-type-select {
+    max-width: 8rem;
+    flex-shrink: 0;
+}
+
+.hazard-row-steps {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding-top: 0.35rem;
+}
+
+/* Step link buttons — pill with number + name */
+.step-link-btn {
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border: 1px solid #ccc;
+    background: #fff;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.1s;
+    white-space: nowrap;
+}
+
+.step-link-btn:hover {
+    border-color: #856404;
+    background: #fff8e1;
+    color: #495057;
+}
+
+.step-link-btn.active {
+    background: #856404;
+    border-color: #856404;
+    color: #fff;
+}
+
+.step-link-num {
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.step-link-text {
+    font-weight: 400;
+}
+
+.hazard-link-btn {
+    width: auto;
+    border-radius: 0.25rem;
+    padding: 0 0.4rem;
+    gap: 0.2rem;
+}
+
+.hazard-link-btn.active {
+    background: #a33;
+    border-color: #a33;
+    color: #fff;
+}
+
+.hazard-link-btn.active .badge {
+    display: none;
+}

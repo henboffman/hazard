@@ -1,0 +1,786 @@
+@page "/"
+@rendermode InteractiveServer
+@using HazardAnalysis.Models
+@inject IJSRuntime JS
+
+<PageTitle>Pre-Task Hazard Analysis</PageTitle>
+
+<div class="container-fluid @(PresentationMode ? "presentation-mode" : "")">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Pre-Task Hazard Analysis</h2>
+        <div class="d-flex gap-2 align-items-center">
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="presMode" @bind="PresentationMode" />
+                <label class="form-check-label" for="presMode">Present</label>
+            </div>
+            @if (ConfirmingReset)
+            {
+                <span class="text-danger fw-bold">Clear everything?</span>
+                <button class="btn btn-danger btn-sm" @onclick="DoReset">Yes, start over</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => ConfirmingReset = false">Cancel</button>
+            }
+            else
+            {
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => ConfirmingReset = true">New Analysis</button>
+            }
+        </div>
+    </div>
+
+    @* Header info *@
+    <div class="card mb-3">
+            <div class="card-body py-2">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label form-label-sm mb-0">Analysis Title</label>
+                        <input class="form-control form-control-sm" @bind="Analysis.Title" @bind:event="oninput" placeholder="e.g., Roof repair on Building 4" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-0">Prepared By</label>
+                        <input class="form-control form-control-sm" @bind="Analysis.CreatedBy" @bind:event="oninput" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-0">Date</label>
+                        <input class="form-control form-control-sm" type="date" @bind="Analysis.CreatedAt" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* Phase navigation with counts *@
+        <div class="phase-stepper mb-3">
+            <div class="d-flex gap-0">
+                @for (int i = 0; i < Phases.Length; i++)
+                {
+                    var phase = i;
+                    var count = GetPhaseCount(phase);
+                    var gaps = GetPhaseGapCount(phase);
+                    <button class="btn phase-step @(CurrentPhase == phase ? "active" : "") @(count > 0 && CurrentPhase != phase ? "has-content" : "") @(CurrentPhase > phase && count == 0 ? "empty-warning" : "")"
+                            @onclick="() => CurrentPhase = phase">
+                        <span class="phase-number">@(phase + 1)</span>
+                        <span class="phase-label">@Phases[phase]</span>
+                        @if (count > 0)
+                        {
+                            <span class="phase-count">@count</span>
+                        }
+                        @if (gaps > 0 && CurrentPhase != phase)
+                        {
+                            <span class="phase-gaps" title="@gaps item(s) missing links">@gaps</span>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+
+        @* Phase content *@
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">@Phases[CurrentPhase]</h5>
+                    <small class="text-secondary">@PhaseDescriptions[CurrentPhase]</small>
+                </div>
+                @if (CurrentPhase < 4)
+                {
+                    <button class="btn btn-primary btn-sm" @onclick="AddItemToCurrentPhase">
+                        + Add @PhaseSingular[CurrentPhase]
+                    </button>
+                }
+            </div>
+            @if (CurrentPhase == 3)
+            {
+                <div class="controls-reference">
+                    <div class="controls-reference-title">Hierarchy of Controls — prefer higher levels</div>
+                    <div class="controls-reference-grid">
+                        <div class="controls-ref-item controls-ref-best">
+                            <strong>Elimination</strong>
+                            <span>Remove the hazard entirely</span>
+                        </div>
+                        <div class="controls-ref-item controls-ref-better">
+                            <strong>Substitution</strong>
+                            <span>Replace with something less hazardous</span>
+                        </div>
+                        <div class="controls-ref-item controls-ref-good">
+                            <strong>Engineering</strong>
+                            <span>Isolate people from the hazard</span>
+                        </div>
+                        <div class="controls-ref-item controls-ref-fair">
+                            <strong>Administrative</strong>
+                            <span>Change the way people work</span>
+                        </div>
+                        <div class="controls-ref-item controls-ref-last">
+                            <strong>PPE</strong>
+                            <span>Protect the worker (last resort)</span>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="card-body">
+                @* Guiding prompts *@
+                @if (CurrentPhase != 3)
+                {
+                    <div class="guide-prompts mb-2">
+                        @foreach (var prompt in PhasePrompts[CurrentPhase])
+                        {
+                            <small class="guide-prompt">@prompt</small>
+                        }
+                    </div>
+                }
+
+                @* Context panel for phases 2+ *@
+                @if (CurrentPhase >= 2 && (Analysis.Outcomes.Any() || Analysis.Steps.Any()))
+                {
+                    <div class="context-panel mb-3">
+                        <div class="context-panel-header" @onclick="() => ContextPanelOpen = !ContextPanelOpen">
+                            <span>@(ContextPanelOpen ? "v" : ">") Prior context</span>
+                            <small>@Analysis.Outcomes.Count outcome(s), @Analysis.Steps.Count step(s)</small>
+                        </div>
+                        @if (ContextPanelOpen)
+                        {
+                            <div class="context-panel-body">
+                                <div class="row g-3">
+                                    @if (Analysis.Outcomes.Any())
+                                    {
+                                        <div class="col-md-4">
+                                            <div class="context-section">
+                                                <h6 class="context-section-title">Desired Outcomes</h6>
+                                                <ul class="context-list">
+                                                    @foreach (var o in Analysis.Outcomes)
+                                                    {
+                                                        <li>@(string.IsNullOrWhiteSpace(o.Text) ? "(empty)" : o.Text)</li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (Analysis.Steps.Any())
+                                    {
+                                        <div class="@(Analysis.Outcomes.Any() ? "col-md-8" : "col-12")">
+                                            <div class="context-section">
+                                                <h6 class="context-section-title">Task Steps</h6>
+                                                @{
+                                                    var ctxGroups = GetStepGroups(Analysis.Steps.ToList());
+                                                }
+                                                @foreach (var group in ctxGroups)
+                                                {
+                                                    var outcomeNames = group.Steps[0].LinkedOutcomeIds
+                                                        .Select(id => GetOutcomeText(id))
+                                                        .Where(t => t != "(deleted)");
+                                                    <div class="context-step-group">
+                                                        @if (outcomeNames.Any())
+                                                        {
+                                                            <small class="ctx-outcome-label">@string.Join(", ", outcomeNames)</small>
+                                                        }
+                                                        <ol class="context-list" start="@(Analysis.Steps.IndexOf(group.Steps[0]) + 1)">
+                                                            @foreach (var s in group.Steps)
+                                                            {
+                                                                var hasHazard = Analysis.Hazards.Any(h => h.LinkedStepIds.Contains(s.Id));
+                                                                <li class="@(!hasHazard && CurrentPhase >= 2 ? "gap-item" : "")">
+                                                                    @(string.IsNullOrWhiteSpace(s.Text) ? "(empty)" : s.Text)
+                                                                    @if (!hasHazard && CurrentPhase >= 2)
+                                                                    {
+                                                                        <span class="gap-flag" title="No hazards identified for this step">no hazard</span>
+                                                                    }
+                                                                </li>
+                                                            }
+                                                        </ol>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                @if (CurrentPhase == 3 && Analysis.Hazards.Any())
+                                {
+                                    <div class="context-section mt-2">
+                                        <h6 class="context-section-title">Hazards</h6>
+                                        <ul class="context-list">
+                                            @foreach (var h in Analysis.Hazards)
+                                            {
+                                                var hasMitigation = Analysis.Mitigations.Any(m => m.LinkedHazardIds.Contains(h.Id));
+                                                <li class="@(!hasMitigation ? "gap-item" : "")">
+                                                    <span class="badge @GetRiskBadgeClass(h) me-1" style="font-size:0.65rem">@GetRiskScore(h)</span>
+                                                    @(string.IsNullOrWhiteSpace(h.Text) ? "(empty)" : h.Text)
+                                                    @if (!hasMitigation)
+                                                    {
+                                                        <span class="gap-flag" title="No mitigation identified for this hazard">no mitigation</span>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @switch (CurrentPhase)
+                {
+                    case 0:
+                        @RenderOutcomes()
+                        break;
+                    case 1:
+                        @RenderSteps()
+                        break;
+                    case 2:
+                        @RenderHazards()
+                        break;
+                    case 3:
+                        @RenderMitigations()
+                        break;
+                    case 4:
+                        @RenderSummary()
+                        break;
+                }
+
+                @if (CurrentPhase < 4 && GetCurrentPhaseCount() == 0)
+                {
+                    <div class="empty-phase-prompt text-center py-3">
+                        <button class="btn btn-outline-primary" @onclick="AddItemToCurrentPhase">
+                            + Add your first @(PhaseSingular[CurrentPhase].ToLower())
+                        </button>
+                    </div>
+                }
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <button class="btn btn-outline-secondary" disabled="@(CurrentPhase == 0)" @onclick="() => CurrentPhase--">
+                    Previous
+                </button>
+                <div class="phase-footer-status">
+                    @{
+                        var phaseCount = GetCurrentPhaseCount();
+                        var phaseGaps = GetPhaseGapCount(CurrentPhase);
+                    }
+                    @if (phaseCount > 0 && phaseGaps > 0)
+                    {
+                        <small class="footer-warning">@phaseGaps @(PhaseSingular[CurrentPhase].ToLower())(s) without links</small>
+                    }
+                    else if (phaseCount > 0 && phaseGaps == 0 && CurrentPhase > 0)
+                    {
+                        <small class="footer-success">All items linked</small>
+                    }
+                </div>
+                @if (CurrentPhase < 4)
+                {
+                    <button class="btn btn-primary" @onclick="() => CurrentPhase++">
+                        Next: @Phases[CurrentPhase + 1]
+                    </button>
+                }
+            </div>
+        </div>
+
+</div>
+
+@* ---- Render fragments ---- *@
+
+@{
+    RenderFragment RenderOutcomes() => __builder2 =>
+    {
+        foreach (var outcome in Analysis.Outcomes.ToList())
+        {
+            var o = outcome;
+            <div class="phase-item mb-2">
+                <div class="d-flex gap-2 align-items-start">
+                    <div class="flex-grow-1">
+                        <input class="form-control" @bind="o.Text" @bind:event="oninput" placeholder="What does safe, successful completion look like?" />
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" @onclick="() => Analysis.Outcomes.Remove(o)" title="Remove">X</button>
+                </div>
+            </div>
+        }
+    };
+
+    RenderFragment RenderSteps() => __builder2 =>
+    {
+        var stepsList = Analysis.Steps.ToList();
+        var groups = GetStepGroups(stepsList);
+
+        foreach (var group in groups)
+        {
+            var outcomeKey = group.OutcomeKey;
+            var linkedIds = group.Steps[0].LinkedOutcomeIds;
+
+            <div class="step-group mb-2">
+                @if (Analysis.Outcomes.Any())
+                {
+                    <div class="step-group-header">
+                        <div class="d-flex flex-wrap align-items-center gap-1">
+                            <small class="step-group-label me-1">Outcome:</small>
+                            @foreach (var outcome in Analysis.Outcomes)
+                            {
+                                var oid = outcome.Id;
+                                var linked = linkedIds.Contains(oid);
+                                <button class="btn btn-sm @(linked ? "btn-primary" : "btn-outline-primary")"
+                                        @onclick="() => ToggleGroupLinks(group.Steps, oid)">
+                                    @TruncateText(outcome.Text, 30)
+                                </button>
+                            }
+                            @if (!linkedIds.Any())
+                            {
+                                <span class="gap-flag ms-1">not linked to any outcome</span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @foreach (var entry in group.Steps.Select((s, i) => (Step: s, LocalIdx: i)))
+                {
+                    var step = entry.Step;
+                    var globalIdx = Analysis.Steps.IndexOf(step);
+                    var gIdx = globalIdx;
+                    <div class="step-row">
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="badge bg-secondary">@(gIdx + 1)</span>
+                            <input class="form-control form-control-sm flex-grow-1" @bind="step.Text" @bind:event="oninput" placeholder="What happens in this step?"
+                                   data-step-id="@step.Id" @onkeydown="(e) => HandleStepKeyDown(e, gIdx)" />
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-outline-secondary btn-sm" disabled="@(gIdx == 0)" @onclick="() => MoveStep(gIdx, -1)">^</button>
+                                <button class="btn btn-outline-secondary btn-sm" disabled="@(gIdx == Analysis.Steps.Count - 1)" @onclick="() => MoveStep(gIdx, 1)">v</button>
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => Analysis.Steps.Remove(step)">X</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="text-center mt-1 mb-1">
+                    @{
+                        var lastGlobalIdx = Analysis.Steps.IndexOf(group.Steps.Last());
+                        var lastIdx = lastGlobalIdx;
+                    }
+                    <button class="btn btn-outline-primary btn-sm insert-step-btn" @onclick="() => InsertStepAfter(lastIdx)" title="Insert step below with same links">
+                        + Insert step
+                    </button>
+                </div>
+            </div>
+        }
+    };
+
+    RenderFragment RenderHazards() => __builder2 =>
+    {
+        foreach (var hazard in Analysis.Hazards.ToList())
+        {
+            var h = hazard;
+            var hasStepLink = h.LinkedStepIds.Any();
+            <div class="hazard-card mb-2 @(!hasStepLink ? "unlinked-item" : "")">
+                <div class="hazard-row-main">
+                    <span class="badge @GetRiskBadgeClass(h)" title="@h.Likelihood likelihood x @h.Severity severity">@GetRiskScore(h)</span>
+                    <input class="form-control form-control-sm flex-grow-1" @bind="h.Text" @bind:event="oninput" placeholder="What could go wrong?" />
+                    <div class="hazard-risk-controls">
+                        <select class="form-select form-select-sm hazard-select" @bind="h.Likelihood">
+                            <option value="@RiskLevel.Low">Likelihood: Low</option>
+                            <option value="@RiskLevel.Medium">Likelihood: Med</option>
+                            <option value="@RiskLevel.High">Likelihood: High</option>
+                            <option value="@RiskLevel.Critical">Likelihood: Crit</option>
+                        </select>
+                        <select class="form-select form-select-sm hazard-select" @bind="h.Severity">
+                            <option value="@RiskLevel.Low">Severity: Low</option>
+                            <option value="@RiskLevel.Medium">Severity: Med</option>
+                            <option value="@RiskLevel.High">Severity: High</option>
+                            <option value="@RiskLevel.Critical">Severity: Crit</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" @onclick="() => Analysis.Hazards.Remove(h)">X</button>
+                </div>
+                @if (Analysis.Steps.Any())
+                {
+                    <div class="hazard-row-steps">
+                        <small class="link-label">Steps:</small>
+                        @for (int si = 0; si < Analysis.Steps.Count; si++)
+                        {
+                            var step = Analysis.Steps[si];
+                            var sid = step.Id;
+                            var linked = h.LinkedStepIds.Contains(sid);
+                            var stepNum = si + 1;
+                            <button class="btn step-link-btn @(linked ? "active" : "")"
+                                    @onclick="() => ToggleLink(h.LinkedStepIds, sid)"
+                                    title="@step.Text">
+                                <span class="step-link-num">@stepNum</span>
+                                <span class="step-link-text">@TruncateText(step.Text, 20)</span>
+                            </button>
+                        }
+                        @if (!hasStepLink)
+                        {
+                            <small class="link-warning ms-2">select at least one</small>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    };
+
+    RenderFragment RenderMitigations() => __builder2 =>
+    {
+        foreach (var mit in Analysis.Mitigations.ToList())
+        {
+            var m = mit;
+            var hasHazardLink = m.LinkedHazardIds.Any();
+            <div class="hazard-card mb-2 @(!hasHazardLink ? "unlinked-item" : "")">
+                <div class="hazard-row-main">
+                    <select class="form-select form-select-sm mitigation-type-select" @bind="m.Type" title="@GetHierarchyHint(m.Type)">
+                        <option value="@MitigationType.Elimination">Eliminate</option>
+                        <option value="@MitigationType.Substitution">Substitute</option>
+                        <option value="@MitigationType.Engineering">Engineer</option>
+                        <option value="@MitigationType.Administrative">Admin</option>
+                        <option value="@MitigationType.PPE">PPE</option>
+                    </select>
+                    <input class="form-control form-control-sm flex-grow-1" @bind="m.Text" @bind:event="oninput" placeholder="How will you eliminate or reduce this hazard?" />
+                    <span class="hierarchy-hint">@GetHierarchyHint(m.Type)</span>
+                    <button class="btn btn-outline-danger btn-sm" @onclick="() => Analysis.Mitigations.Remove(m)">X</button>
+                </div>
+                @if (Analysis.Hazards.Any())
+                {
+                    <div class="hazard-row-steps">
+                        <small class="link-label">Hazards:</small>
+                        @for (int hi = 0; hi < Analysis.Hazards.Count; hi++)
+                        {
+                            var hazard = Analysis.Hazards[hi];
+                            var hid = hazard.Id;
+                            var linked = m.LinkedHazardIds.Contains(hid);
+                            var hazNum = hi + 1;
+                            <button class="btn step-link-btn hazard-link-btn @(linked ? "active" : "")"
+                                    @onclick="() => ToggleLink(m.LinkedHazardIds, hid)"
+                                    title="@hazard.Text (@GetRiskScore(hazard))">
+                                <span class="badge @GetRiskBadgeClass(hazard)" style="font-size:0.6rem">@GetRiskScore(hazard)</span>
+                                @hazNum
+                            </button>
+                        }
+                        @if (!hasHazardLink)
+                        {
+                            <small class="link-warning ms-2">select at least one</small>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    };
+
+    RenderFragment RenderSummary() => __builder2 =>
+    {
+        var totalGaps = Enumerable.Range(0, 4).Sum(p => GetPhaseGapCount(p));
+        <div class="summary-status mb-3 @(totalGaps == 0 ? "summary-status-good" : "summary-status-warn")">
+            @if (totalGaps == 0)
+            {
+                <span>Full coverage — all items linked through the chain</span>
+            }
+            else
+            {
+                <span>@totalGaps coverage gap(s) — items missing links</span>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Analysis.Title))
+        {
+            <h6>@Analysis.Title <small class="text-secondary">@Analysis.CreatedBy @Analysis.CreatedAt.ToString("yyyy-MM-dd")</small></h6>
+        }
+
+        foreach (var outcome in Analysis.Outcomes)
+        {
+            var linkedSteps = Analysis.Steps.Where(s => s.LinkedOutcomeIds.Contains(outcome.Id)).ToList();
+            <div class="summary-chain mb-3">
+                <div class="summary-outcome">
+                    <span class="summary-label">Outcome</span>
+                    @(string.IsNullOrWhiteSpace(outcome.Text) ? "(empty)" : outcome.Text)
+                </div>
+                @if (linkedSteps.Any())
+                {
+                    foreach (var step in linkedSteps)
+                    {
+                        var stepIdx = Analysis.Steps.IndexOf(step) + 1;
+                        var linkedHazards = Analysis.Hazards.Where(h => h.LinkedStepIds.Contains(step.Id)).ToList();
+                        <div class="summary-step">
+                            <span class="summary-label">Step @stepIdx</span>
+                            @step.Text
+                            @if (!linkedHazards.Any())
+                            {
+                                <span class="gap-flag">no hazards identified</span>
+                            }
+                        </div>
+                        foreach (var hazard in linkedHazards)
+                        {
+                            var linkedMits = Analysis.Mitigations.Where(m => m.LinkedHazardIds.Contains(hazard.Id)).ToList();
+                            <div class="summary-hazard">
+                                <span class="summary-label"><span class="badge @GetRiskBadgeClass(hazard)" style="font-size:0.65rem">@GetRiskScore(hazard)</span> Hazard</span>
+                                @hazard.Text
+                                @if (!linkedMits.Any())
+                                {
+                                    <span class="gap-flag">no mitigation</span>
+                                }
+                            </div>
+                            foreach (var mit in linkedMits)
+                            {
+                                <div class="summary-mitigation">
+                                    <span class="summary-label"><span class="badge bg-info text-dark" style="font-size:0.65rem">@mit.Type</span> Control</span>
+                                    @mit.Text
+                                </div>
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    <div class="summary-step">
+                        <span class="gap-flag">no steps linked</span>
+                    </div>
+                }
+            </div>
+        }
+
+        <text>@{
+            var sLinkedStepIds = Analysis.Steps
+                .Where(s => s.LinkedOutcomeIds.Any(oid => Analysis.Outcomes.Any(o => o.Id == oid)))
+                .Select(s => s.Id).ToHashSet();
+            var sOrphanSteps = Analysis.Steps.Where(s => !sLinkedStepIds.Contains(s.Id)).ToList();
+            var sReachableHazardIds = Analysis.Hazards
+                .Where(h => h.LinkedStepIds.Any(sid => sLinkedStepIds.Contains(sid)))
+                .Select(h => h.Id).ToHashSet();
+            var sOrphanHazards = Analysis.Hazards.Where(h => !sReachableHazardIds.Contains(h.Id)).ToList();
+            var sReachableMitIds = Analysis.Mitigations
+                .Where(m => m.LinkedHazardIds.Any(hid => sReachableHazardIds.Contains(hid)))
+                .Select(m => m.Id).ToHashSet();
+            var sOrphanMits = Analysis.Mitigations.Where(m => !sReachableMitIds.Contains(m.Id)).ToList();
+        }</text>
+        @if (sOrphanSteps.Any() || sOrphanHazards.Any() || sOrphanMits.Any())
+        {
+            <div class="summary-orphans mt-3">
+                <h6 class="orphan-heading">Unlinked Items</h6>
+                <small class="orphan-subtext">These items are not connected to the chain above.</small>
+                @if (sOrphanSteps.Any())
+                {
+                    <div class="mt-1"><strong>Steps:</strong>
+                        @foreach (var s in sOrphanSteps)
+                        {
+                            <span class="badge bg-secondary me-1">@s.Text</span>
+                        }
+                    </div>
+                }
+                @if (sOrphanHazards.Any())
+                {
+                    <div class="mt-1"><strong>Hazards:</strong>
+                        @foreach (var h in sOrphanHazards)
+                        {
+                            <span class="badge @GetRiskBadgeClass(h) me-1">@h.Text</span>
+                        }
+                    </div>
+                }
+                @if (sOrphanMits.Any())
+                {
+                    <div class="mt-1"><strong>Mitigations:</strong>
+                        @foreach (var m in sOrphanMits)
+                        {
+                            <span class="badge bg-info text-dark me-1">@m.Text</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    };
+}
+
+@code {
+    private PreTaskAnalysis Analysis = new();
+    private int CurrentPhase = 0;
+    private bool ContextPanelOpen = true;
+    private bool ConfirmingReset = false;
+    private bool PresentationMode = false;
+
+    private static readonly string[] Phases = { "Desired Outcomes", "Task Steps", "Hazards", "Controls & Mitigations", "Summary" };
+    private static readonly string[] PhaseSingular = { "Outcome", "Step", "Hazard", "Mitigation", "Item" };
+    private static readonly string[] PhaseDescriptions =
+    {
+        "Define what a successful, safe completion looks like.",
+        "Break the task into individual sequential steps.",
+        "Identify potential hazards associated with each step.",
+        "Determine controls to eliminate or reduce each hazard.",
+        "Review the full analysis chain."
+    };
+
+    private static readonly string[][] PhasePrompts =
+    {
+        new[] { "What does \"done safely\" look like?", "What conditions must be true when this task is complete?", "Are there quality or compliance requirements?" },
+        new[] { "Walk through the task from start to finish.", "Include setup, execution, and cleanup steps.", "What happens first? Then what?" },
+        new[] { "For each step, ask: what could go wrong?", "Consider: falls, strikes, caught-in, electrical, chemical, ergonomic, environmental.", "What has gone wrong before in similar tasks?" },
+        new[] { "Can you eliminate the hazard entirely?",  "Prefer higher-level controls: Elimination > Substitution > Engineering > Administrative > PPE.", "Who is responsible for ensuring each control is in place?" },
+        Array.Empty<string>()
+    };
+
+    private void AddItemToCurrentPhase()
+    {
+        switch (CurrentPhase)
+        {
+            case 0: Analysis.Outcomes.Add(new AnalysisItem()); break;
+            case 1: Analysis.Steps.Add(new TaskStep { Order = Analysis.Steps.Count + 1 }); break;
+            case 2: Analysis.Hazards.Add(new Hazard()); break;
+            case 3: Analysis.Mitigations.Add(new Mitigation()); break;
+        }
+    }
+
+    private int GetCurrentPhaseCount() => GetPhaseCount(CurrentPhase);
+
+    private int GetPhaseCount(int phase) => phase switch
+    {
+        0 => Analysis.Outcomes.Count,
+        1 => Analysis.Steps.Count,
+        2 => Analysis.Hazards.Count,
+        3 => Analysis.Mitigations.Count,
+        _ => 0
+    };
+
+    private int GetPhaseGapCount(int phase) => phase switch
+    {
+        1 => Analysis.Steps.Count(s => !s.LinkedOutcomeIds.Any()),
+        2 => Analysis.Hazards.Count(h => !h.LinkedStepIds.Any()),
+        3 => Analysis.Mitigations.Count(m => !m.LinkedHazardIds.Any()),
+        _ => 0
+    };
+
+    private record StepGroup(string OutcomeKey, List<TaskStep> Steps);
+
+    private List<StepGroup> GetStepGroups(List<TaskStep> steps)
+    {
+        var groups = new List<StepGroup>();
+        if (steps.Count == 0) return groups;
+
+        string KeyFor(TaskStep s) => string.Join(",", s.LinkedOutcomeIds.OrderBy(x => x));
+
+        var currentKey = KeyFor(steps[0]);
+        var currentGroup = new List<TaskStep> { steps[0] };
+
+        for (int i = 1; i < steps.Count; i++)
+        {
+            var key = KeyFor(steps[i]);
+            if (key == currentKey)
+            {
+                currentGroup.Add(steps[i]);
+            }
+            else
+            {
+                groups.Add(new StepGroup(currentKey, currentGroup));
+                currentKey = key;
+                currentGroup = new List<TaskStep> { steps[i] };
+            }
+        }
+        groups.Add(new StepGroup(currentKey, currentGroup));
+        return groups;
+    }
+
+    private void ToggleGroupLinks(List<TaskStep> groupSteps, string outcomeId)
+    {
+        var firstStep = groupSteps[0];
+        bool shouldAdd = !firstStep.LinkedOutcomeIds.Contains(outcomeId);
+
+        foreach (var step in groupSteps)
+        {
+            if (shouldAdd && !step.LinkedOutcomeIds.Contains(outcomeId))
+                step.LinkedOutcomeIds.Add(outcomeId);
+            else if (!shouldAdd)
+                step.LinkedOutcomeIds.Remove(outcomeId);
+        }
+    }
+
+    private void ToggleLink(List<string> linkList, string id)
+    {
+        if (!linkList.Remove(id))
+            linkList.Add(id);
+    }
+
+    private void MoveStep(int index, int direction)
+    {
+        var newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= Analysis.Steps.Count) return;
+        (Analysis.Steps[index], Analysis.Steps[newIndex]) = (Analysis.Steps[newIndex], Analysis.Steps[index]);
+    }
+
+    private void InsertStepAfter(int index)
+    {
+        var source = Analysis.Steps[index];
+        var newStep = new TaskStep
+        {
+            Order = index + 2,
+            LinkedOutcomeIds = new List<string>(source.LinkedOutcomeIds)
+        };
+        Analysis.Steps.Insert(index + 1, newStep);
+    }
+
+    private string? _focusStepId;
+
+    private void HandleStepKeyDown(KeyboardEventArgs e, int index)
+    {
+        if (e.Key == "Enter")
+        {
+            InsertStepAfter(index);
+            _focusStepId = Analysis.Steps[index + 1].Id;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusStepId is not null)
+        {
+            var id = _focusStepId;
+            _focusStepId = null;
+            await JS.InvokeVoidAsync("eval", $"document.querySelector('[data-step-id=\"{id}\"]')?.focus()");
+        }
+    }
+
+    private string GetOutcomeText(string id) =>
+        Analysis.Outcomes.FirstOrDefault(o => o.Id == id)?.Text ?? "(deleted)";
+
+    private string GetStepLabel(string id)
+    {
+        var idx = Analysis.Steps.FindIndex(s => s.Id == id);
+        if (idx < 0) return "(deleted)";
+        return $"Step {idx + 1}";
+    }
+
+    private string GetHazardText(string id) =>
+        TruncateText(Analysis.Hazards.FirstOrDefault(h => h.Id == id)?.Text ?? "(deleted)", 20);
+
+    private string TruncateText(string text, int max) =>
+        string.IsNullOrWhiteSpace(text) ? "(empty)" :
+        text.Length <= max ? text : text[..max] + "...";
+
+    private string GetRiskScore(Hazard h)
+    {
+        int score = ((int)h.Likelihood + 1) * ((int)h.Severity + 1);
+        return score switch
+        {
+            <= 2 => "Low",
+            <= 6 => "Med",
+            <= 9 => "High",
+            _ => "Crit"
+        };
+    }
+
+    private string GetRiskBadgeClass(Hazard h)
+    {
+        int score = ((int)h.Likelihood + 1) * ((int)h.Severity + 1);
+        return score switch
+        {
+            <= 2 => "bg-success",
+            <= 6 => "bg-warning text-dark",
+            <= 9 => "bg-danger",
+            _ => "bg-dark"
+        };
+    }
+
+    private string GetHierarchyHint(MitigationType type) => type switch
+    {
+        MitigationType.Elimination => "Most effective",
+        MitigationType.Substitution => "More effective",
+        MitigationType.Engineering => "Effective",
+        MitigationType.Administrative => "Less effective",
+        MitigationType.PPE => "Least effective — last resort",
+        _ => ""
+    };
+
+    private void DoReset()
+    {
+        Analysis = new PreTaskAnalysis();
+        CurrentPhase = 0;
+        ConfirmingReset = false;
+    }
+
+    private void ResetAnalysis()
+    {
+        ConfirmingReset = true;
+    }
+}
