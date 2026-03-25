@@ -84,6 +84,12 @@
                         + Add @PhaseSingular[CurrentPhase]
                     </button>
                 }
+                @if (CurrentPhase == 4)
+                {
+                    <button class="btn btn-outline-success btn-sm" @onclick="ExportMarkdown">
+                        Export Markdown
+                    </button>
+                }
             </div>
             @if (CurrentPhase == 3)
             {
@@ -782,5 +788,158 @@
     private void ResetAnalysis()
     {
         ConfirmingReset = true;
+    }
+
+    private async Task ExportMarkdown()
+    {
+        var sb = new System.Text.StringBuilder();
+        var title = string.IsNullOrWhiteSpace(Analysis.Title) ? "Pre-Task Hazard Analysis" : Analysis.Title;
+
+        sb.AppendLine($"# {title}");
+        sb.AppendLine();
+        if (!string.IsNullOrWhiteSpace(Analysis.CreatedBy))
+            sb.AppendLine($"**Prepared by:** {Analysis.CreatedBy}  ");
+        sb.AppendLine($"**Date:** {Analysis.CreatedAt:yyyy-MM-dd}");
+        sb.AppendLine();
+        sb.AppendLine("---");
+        sb.AppendLine();
+
+        // Desired Outcomes
+        sb.AppendLine("## Desired Outcomes");
+        sb.AppendLine();
+        foreach (var o in Analysis.Outcomes)
+        {
+            sb.AppendLine($"- {(string.IsNullOrWhiteSpace(o.Text) ? "_(empty)_" : o.Text)}");
+        }
+        if (!Analysis.Outcomes.Any()) sb.AppendLine("_None defined._");
+        sb.AppendLine();
+
+        // Task Steps
+        sb.AppendLine("## Task Steps");
+        sb.AppendLine();
+        for (int i = 0; i < Analysis.Steps.Count; i++)
+        {
+            var step = Analysis.Steps[i];
+            var outcomes = step.LinkedOutcomeIds
+                .Select(id => GetOutcomeText(id))
+                .Where(t => t != "(deleted)");
+            sb.Append($"{i + 1}. {(string.IsNullOrWhiteSpace(step.Text) ? "_(empty)_" : step.Text)}");
+            if (outcomes.Any())
+                sb.Append($"  _{string.Join(", ", outcomes)}_");
+            sb.AppendLine();
+        }
+        if (!Analysis.Steps.Any()) sb.AppendLine("_None defined._");
+        sb.AppendLine();
+
+        // Linked chain: Outcomes > Steps > Hazards > Mitigations
+        sb.AppendLine("## Analysis Chain");
+        sb.AppendLine();
+
+        foreach (var outcome in Analysis.Outcomes)
+        {
+            sb.AppendLine($"### Outcome: {(string.IsNullOrWhiteSpace(outcome.Text) ? "_(empty)_" : outcome.Text)}");
+            sb.AppendLine();
+
+            var linkedSteps = Analysis.Steps.Where(s => s.LinkedOutcomeIds.Contains(outcome.Id)).ToList();
+            if (!linkedSteps.Any())
+            {
+                sb.AppendLine("> _No steps linked._");
+                sb.AppendLine();
+                continue;
+            }
+
+            foreach (var step in linkedSteps)
+            {
+                var stepIdx = Analysis.Steps.IndexOf(step) + 1;
+                sb.AppendLine($"#### Step {stepIdx}: {step.Text}");
+                sb.AppendLine();
+
+                var linkedHazards = Analysis.Hazards.Where(h => h.LinkedStepIds.Contains(step.Id)).ToList();
+                if (!linkedHazards.Any())
+                {
+                    sb.AppendLine("> _No hazards identified._");
+                    sb.AppendLine();
+                    continue;
+                }
+
+                sb.AppendLine("| Hazard | Likelihood | Severity | Risk | Mitigation | Control Type |");
+                sb.AppendLine("|--------|-----------|----------|------|------------|--------------|");
+
+                foreach (var hazard in linkedHazards)
+                {
+                    var linkedMits = Analysis.Mitigations.Where(m => m.LinkedHazardIds.Contains(hazard.Id)).ToList();
+                    var hazText = string.IsNullOrWhiteSpace(hazard.Text) ? "_(empty)_" : hazard.Text;
+
+                    if (linkedMits.Any())
+                    {
+                        foreach (var mit in linkedMits)
+                        {
+                            var mitText = string.IsNullOrWhiteSpace(mit.Text) ? "_(empty)_" : mit.Text;
+                            sb.AppendLine($"| {hazText} | {hazard.Likelihood} | {hazard.Severity} | **{GetRiskScore(hazard)}** | {mitText} | {mit.Type} |");
+                            hazText = "↳"; // subsequent rows for same hazard
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine($"| {hazText} | {hazard.Likelihood} | {hazard.Severity} | **{GetRiskScore(hazard)}** | ⚠️ _None_ | — |");
+                    }
+                }
+                sb.AppendLine();
+            }
+        }
+
+        // Orphaned items
+        var linkedStepIds = Analysis.Steps
+            .Where(s => s.LinkedOutcomeIds.Any(oid => Analysis.Outcomes.Any(o => o.Id == oid)))
+            .Select(s => s.Id).ToHashSet();
+        var orphanSteps = Analysis.Steps.Where(s => !linkedStepIds.Contains(s.Id)).ToList();
+        var reachableHazardIds = Analysis.Hazards
+            .Where(h => h.LinkedStepIds.Any(sid => linkedStepIds.Contains(sid)))
+            .Select(h => h.Id).ToHashSet();
+        var orphanHazards = Analysis.Hazards.Where(h => !reachableHazardIds.Contains(h.Id)).ToList();
+        var reachableMitIds = Analysis.Mitigations
+            .Where(m => m.LinkedHazardIds.Any(hid => reachableHazardIds.Contains(hid)))
+            .Select(m => m.Id).ToHashSet();
+        var orphanMits = Analysis.Mitigations.Where(m => !reachableMitIds.Contains(m.Id)).ToList();
+
+        if (orphanSteps.Any() || orphanHazards.Any() || orphanMits.Any())
+        {
+            sb.AppendLine("## Unlinked Items");
+            sb.AppendLine();
+            sb.AppendLine("_The following items are not connected to the analysis chain:_");
+            sb.AppendLine();
+            foreach (var s in orphanSteps)
+                sb.AppendLine($"- **Step:** {s.Text}");
+            foreach (var h in orphanHazards)
+                sb.AppendLine($"- **Hazard ({GetRiskScore(h)}):** {h.Text}");
+            foreach (var m in orphanMits)
+                sb.AppendLine($"- **Mitigation ({m.Type}):** {m.Text}");
+            sb.AppendLine();
+        }
+
+        // Coverage
+        var totalGaps = Enumerable.Range(0, 4).Sum(p => GetPhaseGapCount(p));
+        sb.AppendLine("---");
+        sb.AppendLine();
+        sb.AppendLine(totalGaps == 0
+            ? "**Coverage:** Full — all items linked through the chain."
+            : $"**Coverage:** {totalGaps} gap(s) — some items are missing links.");
+
+        var markdown = sb.ToString();
+        var fileName = $"PTHA-{(string.IsNullOrWhiteSpace(Analysis.Title) ? "analysis" : Analysis.Title.Replace(" ", "-"))}-{Analysis.CreatedAt:yyyy-MM-dd}.md";
+
+        await JS.InvokeVoidAsync("eval", $@"
+            (function() {{
+                var blob = new Blob([{System.Text.Json.JsonSerializer.Serialize(markdown)}], {{ type: 'text/markdown' }});
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = {System.Text.Json.JsonSerializer.Serialize(fileName)};
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }})();
+        ");
     }
 }
